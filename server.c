@@ -12,7 +12,7 @@
 
 #include "./includes/minitalk.h"
 
-void	putnbr(int pid)
+static void	putnbr(int pid)
 {
 	char	c;
 
@@ -22,7 +22,7 @@ void	putnbr(int pid)
 	write(1, &c, 1);
 }
 
-void	send_ack(int signal, int cli_pid)
+static void	send_ack(int signal, int cli_pid)
 {
 	if (kill(cli_pid, signal) == -1)
 	{
@@ -31,11 +31,12 @@ void	send_ack(int signal, int cli_pid)
 	}
 }
 
-void	sign_handler(int signal, siginfo_t *info ,void *ret)
+static void	sign_handler(int signal, siginfo_t *info, void *context)
 {
-	static int nbits = 7;
-	static char c; 
+	static int	nbits = 7;
+	static char	c;
 
+	(void)context;
 	if (signal == SIGUSR1)
 	{
 		c |= 1 << (nbits--);
@@ -47,7 +48,7 @@ void	sign_handler(int signal, siginfo_t *info ,void *ret)
 		send_ack(SIGUSR1, info->si_pid);
 	}
 	else
-		send_ack(SIGUSR2, info->si_pid);
+		exit(1);
 	if (nbits < 0)
 	{
 		nbits = 7;
@@ -58,14 +59,14 @@ void	sign_handler(int signal, siginfo_t *info ,void *ret)
 	}
 }
 
-int	main()
+int	main(void)
 {
-	struct sigaction sa;
-	pid_t pid;
+	struct sigaction	sa;
+	pid_t				pid;
 
 	pid = getpid();
 	putnbr(pid);
-	write(1,"\n", 1);
+	write(1, "\n", 1);
 	sa.sa_sigaction = &sign_handler;
 	sa.sa_flags = SA_SIGINFO;
 	sigemptyset(&sa.sa_mask);
@@ -75,7 +76,7 @@ int	main()
 		|| sigaction(SIGUSR2, &sa, 0) == -1)
 	{
 		write(1, "failed to launch handler functions", 34);
-		return (1);
+		exit (1);
 	}
 	while (1)
 		pause();
